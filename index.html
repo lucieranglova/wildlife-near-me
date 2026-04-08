@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aussie Wildlife Finder</title>
+  <title>Aussie Wildlife Finder 🦘</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦘</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -149,9 +149,13 @@
       padding: 0.32rem 0.85rem;
       cursor: pointer;
       color: var(--text-muted);
-      transition: all 0.15s;
+      transition: all 0.2s;
     }
-    .season-btn.active { background: var(--ochre); border-color: var(--ochre); color: var(--white); }
+    .season-btn.active { color: var(--white); }
+    .season-btn[data-s="summer"].active  { background: #C8832A; border-color: #C8832A; }
+    .season-btn[data-s="autumn"].active  { background: #9E4A1E; border-color: #9E4A1E; }
+    .season-btn[data-s="winter"].active  { background: #4A7C9E; border-color: #4A7C9E; }
+    .season-btn[data-s="spring"].active  { background: #A0566A; border-color: #A0566A; }
 
     /* LEGEND */
     .legend {
@@ -195,9 +199,33 @@
       padding: 1rem 1.1rem 0.9rem;
       cursor: pointer;
       transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
     }
     .animal-card:hover { transform: translateY(-2px); border-color: var(--ochre-light); box-shadow: 0 4px 18px #C8832A15; }
     .animal-card.open { border-color: var(--ochre); box-shadow: 0 4px 22px #C8832A22; }
+    .card-body { flex: 1; }
+    .card-bar { margin-top: auto; padding-top: 0.7rem; }
+
+    /* PEEK – shown on same-row closed cards when a neighbour is open */
+    .card-peek {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      padding: 1.2rem 0 0.5rem;
+      flex: 1;
+    }
+    .card-peek .peek-emoji { font-size: 2rem; animation: peek-bob 1.6s ease-in-out infinite; }
+    .card-peek .peek-text { font-size: 0.68rem; color: var(--text-muted); font-style: italic; text-align: center; }
+    .animal-card.peeking .card-peek { display: flex; }
+    .animal-card.peeking .card-body,
+    .animal-card.peeking .card-bar { display: none; }
+    @keyframes peek-bob {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50% { transform: translateY(-6px) rotate(5deg); }
+    }
 
     .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.5rem; }
     .animal-emoji { font-size: 1.9rem; line-height: 1; }
@@ -482,20 +510,37 @@
     document.getElementById('animals-grid').innerHTML = sorted.map(a => buildCard(a)).join('');
   }
 
+  const PEEK_MESSAGES = [
+    ['👀', 'something moved over here…'],
+    ['🫣', 'don\'t mind me'],
+    ['🐾', 'suspicious rustling noises'],
+    ['🌿', 'definitely not a snake'],
+    ['😶', 'I\'m just standing here'],
+  ];
+
   function buildCard(a) {
     const c = a.chance;
     const fillClass = c >= 70 ? 'hi' : c <= 30 ? 'lo' : '';
+    const peek = PEEK_MESSAGES[Math.floor(Math.random() * PEEK_MESSAGES.length)];
     return `<div class="animal-card" id="card-${a.id}" onclick="toggleCard('${a.id}')">
       <div class="card-top">
         <span class="animal-emoji">${a.emoji}</span>
         <span class="danger-dot d${a.danger}"></span>
       </div>
-      <div class="animal-name">${a.name}</div>
-      <div class="animal-desc">${a.description}</div>
-      <div class="chance-label">
-        <span>sighting chance</span><span class="chance-pct">${c}%</span>
+      <div class="card-body">
+        <div class="animal-name">${a.name}</div>
+        <div class="animal-desc">${a.description}</div>
       </div>
-      <div class="bar-track"><div class="bar-fill ${fillClass}" style="width:${c}%"></div></div>
+      <div class="card-peek">
+        <span class="peek-emoji">${peek[0]}</span>
+        <span class="peek-text">${peek[1]}</span>
+      </div>
+      <div class="card-bar">
+        <div class="chance-label">
+          <span>sighting chance</span><span class="chance-pct">${c}%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill ${fillClass}" style="width:${c}%"></div></div>
+      </div>
       <div class="infobox" id="info-${a.id}">
         <span class="danger-tag dtag-${a.danger}">${a.dangerLabel}</span>
         <div class="info-row"><span class="info-icon">📅</span><span class="info-key">Active:</span><span class="info-val">${a.active}</span></div>
@@ -511,14 +556,30 @@
     const card = document.getElementById('card-' + id);
     const isOpen = info.classList.contains('open');
 
-    if (openCardId && openCardId !== id) {
+    // close previously open card and clear all peeking
+    if (openCardId) {
       document.getElementById('info-' + openCardId)?.classList.remove('open');
       document.getElementById('card-' + openCardId)?.classList.remove('open');
     }
+    document.querySelectorAll('.animal-card.peeking').forEach(c => c.classList.remove('peeking'));
 
-    info.classList.toggle('open', !isOpen);
-    card.classList.toggle('open', !isOpen);
-    openCardId = isOpen ? null : id;
+    if (!isOpen) {
+      info.classList.add('open');
+      card.classList.add('open');
+      openCardId = id;
+
+      // find same-row neighbours using grid layout
+      const grid = document.getElementById('animals-grid');
+      const cards = [...grid.querySelectorAll('.animal-card')];
+      const openTop = card.getBoundingClientRect().top;
+      cards.forEach(c => {
+        if (c === card) return;
+        const top = c.getBoundingClientRect().top;
+        if (Math.abs(top - openTop) < 10) c.classList.add('peeking');
+      });
+    } else {
+      openCardId = null;
+    }
   }
 
   document.getElementById('addr-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
