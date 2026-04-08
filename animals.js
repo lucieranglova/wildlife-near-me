@@ -13,6 +13,11 @@ const ANIMALS = [
     active: "Year-round, peak in summer",
     warning: "A bite causes local pain and swelling – not lethal, but unpleasant. They love hiding behind sun visors in cars. Always check before driving.",
     funFact: "A huntsman can run at 1 metre per second. And yes, they can drop from the ceiling directly onto you.",
+    spotting: [
+      { icon: "🕐", tip: "Check at night — huntsmans become active after dark and are much easier to spot with a torch." },
+      { icon: "🏠", tip: "Look behind picture frames, curtains, and inside shoes. They love warm, sheltered spots indoors." },
+      { icon: "🌳", tip: "Outside, check under loose bark on eucalyptus trees — a classic huntsman hideout." },
+    ],
   },
   {
     id: "funnel_web",
@@ -28,6 +33,11 @@ const ANIMALS = [
     active: "Summer – especially after rain",
     warning: "Call emergency services IMMEDIATELY if bitten. Apply a pressure bandage. Since antivenom was introduced in 1981, no deaths have occurred – but you must act FAST.",
     funFact: "The male is 6× more venomous than the female – a rarity in the animal kingdom. Their venom is more toxic to humans than to other primates.",
+    spotting: [
+      { icon: "🌧️", tip: "Go out the morning after heavy rain — males leave their burrows to find mates and are most visible then." },
+      { icon: "🪨", tip: "Look for silk-lined burrows with trip-lines radiating outward under rocks, logs, or dense shrubs." },
+      { icon: "👟", tip: "Always shake out shoes, gloves, and towels left outside — funnel-webs hide in dark, enclosed spaces." },
+    ],
   },
   {
     id: "saltwater_croc",
@@ -43,6 +53,11 @@ const ANIMALS = [
     active: "Year-round – more aggressive in warmer months",
     warning: "Never swim in marked croc areas! Saltwater crocs can lurk near ocean beaches too. Take every 'Croc Country' sign SERIOUSLY.",
     funFact: "Saltwater crocs can live over 70 years and weigh up to 1,000 kg. They have the strongest bite force of any living animal.",
+    spotting: [
+      { icon: "🌅", tip: "Early morning and late afternoon — crocs bask on riverbanks to warm up. Binoculars strongly recommended." },
+      { icon: "🚤", tip: "Guided boat tours on the Adelaide or Daintree River offer safe, close-up sightings with expert commentary." },
+      { icon: "👁️", tip: "Scan the water's edge for eyes and nostrils just above the surface — crocs are masters of stillness." },
+    ],
   },
   {
     id: "freshwater_croc",
@@ -58,6 +73,11 @@ const ANIMALS = [
     active: "Year-round",
     warning: "Won't bite unless provoked. Still – keep your distance.",
     funFact: "Freshwater crocs are excellent swimmers and can survive dry seasons buried in mud.",
+    spotting: [
+      { icon: "☀️", tip: "Mid-morning is ideal — freshies bask on sandy riverbanks after the cool night to warm up." },
+      { icon: "🏞️", tip: "Look along inland rivers, gorges, and billabongs in the NT and north QLD. Windjana Gorge is a hotspot." },
+      { icon: "🔦", tip: "Night spotting by boat is very effective — use a torch to catch the orange eyeshine reflecting off the water." },
+    ],
   },
   {
     id: "kangaroo",
@@ -73,6 +93,11 @@ const ANIMALS = [
     active: "Dawn and dusk",
     warning: "Watch out when driving at dusk! A kangaroo on the highway is a very real danger. Never chase a large male – it can kick with 500 kg of force.",
     funFact: "Kangaroos can't walk backwards. That's why they're on the Australian coat of arms – symbolising moving forward.",
+    spotting: [
+      { icon: "🌄", tip: "Go out at dawn or dusk — mobs gather in open grassland and golf courses to graze when it's cooler." },
+      { icon: "🌿", tip: "Look at field edges next to bushland. Kangaroos shelter in the shade during the heat of the day." },
+      { icon: "🚗", tip: "Drive slowly on rural roads at dusk — you'll spot them in the headlights. Pull over safely and watch from the car." },
+    ],
   },
   {
     id: "camel",
@@ -88,6 +113,11 @@ const ANIMALS = [
     active: "Year-round",
     warning: "Males in rut are aggressive. Camels can kick in all directions – keep your distance.",
     funFact: "Australia exports camels to the Arabian Peninsula – it's the only country with a population of truly wild dromedaries.",
+    spotting: [
+      { icon: "🛩️", tip: "The best way to see large mobs is from a scenic flight over the NT or SA outback — herds of hundreds are common." },
+      { icon: "💧", tip: "Find them near waterholes in the dry season — camels need to drink every few days in extreme heat." },
+      { icon: "🌵", tip: "Drive the Oodnadatta Track or Gibb River Road slowly at dawn — camels cross roads and are hard to spot." },
+    ],
   },
   {
     id: "koala",
@@ -103,6 +133,11 @@ const ANIMALS = [
     active: "Nocturnal (rarely seen during the day)",
     warning: "Don't cuddle wild koalas! They have sharp claws and bite harder than you'd expect. They are wild animals, not stuffed toys.",
     funFact: "Koalas have fingerprints virtually indistinguishable from human ones – even forensic scientists struggle to tell them apart.",
+    spotting: [
+      { icon: "🌳", tip: "Look up into the forks of eucalyptus trees — koalas wedge themselves in and are easy to miss. Scan trunks for scratch marks." },
+      { icon: "👂", tip: "In mating season (Oct–Feb), listen for the male's loud belching bellow — it's unmistakable and carries far." },
+      { icon: "🌧️", tip: "After rain, koalas come down from trees to drink and are much easier to spot at ground level." },
+    ],
   },
   {
     id: "cockatoo",
@@ -118,6 +153,11 @@ const ANIMALS = [
     active: "Daytime",
     warning: "A flock of cockatoos can destroy a wooden deck or roof in a few hours. That beak is a serious tool.",
     funFact: "Cockatoos can live up to 80 years. They're so intelligent they get bored – and then start destroying things for fun.",
+    spotting: [
+      { icon: "👂", tip: "You'll hear them before you see them — a screeching flock is unmistakable. Just follow the noise." },
+      { icon: "🌅", tip: "Morning and late afternoon are peak feeding times. Look in grassy parks, sports fields, and farmland." },
+      { icon: "🌳", tip: "At dusk, large flocks gather in roosting trees and make an extraordinary spectacle — find a tall gum tree near water." },
+    ],
   },
   {
     id: "brown_snake",
@@ -133,6 +173,11 @@ const ANIMALS = [
     active: "Spring–Summer, during the day",
     warning: "Call emergency services immediately. Apply a pressure bandage over the full limb. DO NOT MOVE – movement speeds venom absorption. Do not attempt to catch the snake.",
     funFact: "The eastern brown snake can strike up to 12 times in a single encounter. Despite this, with proper treatment, fatalities are rare.",
+    spotting: [
+      { icon: "☀️", tip: "Mid-morning on warm spring days — brown snakes bask on open ground to raise their body temperature after cool nights." },
+      { icon: "👣", tip: "Walk heavily and loudly on bush tracks. Snakes feel vibrations and usually flee well before you see them." },
+      { icon: "🌾", tip: "Check around sheds, hay bales, and long grass on rural properties — brown snakes hunt mice in these areas." },
+    ],
   },
   {
     id: "shark",
@@ -148,6 +193,11 @@ const ANIMALS = [
     active: "Year-round, most active at dawn and dusk",
     warning: "Swim at patrolled beaches within the flags. Avoid swimming at dawn, dusk, and night. Open wounds in the water are a very bad idea.",
     funFact: "Australia is one of the world's most shark-attack-prone countries – yet you're statistically more likely to be killed by a kangaroo (via car collision).",
+    spotting: [
+      { icon: "🛶", tip: "Cage diving tours in Port Lincoln (SA) offer guaranteed sightings — great whites aggregate around seal colonies nearby." },
+      { icon: "🦭", tip: "Look near seal and sea lion colonies — great whites patrol these areas regularly. Keep a safe distance from the water." },
+      { icon: "🚁", tip: "Surf Life Saving drones patrol popular beaches in NSW and QLD — follow their social media for recent sighting reports." },
+    ],
   },
   {
     id: "wombat",
@@ -163,6 +213,11 @@ const ANIMALS = [
     active: "Nocturnal",
     warning: "A wombat is stronger than it looks – 35 kg of pure muscle. Chase one into its burrow and it can crush you against the ceiling. This has actually happened.",
     funFact: "The wombat is the only animal that produces cubic faeces. Scientists only recently figured out how – using a soft intestine with variable stiffness.",
+    spotting: [
+      { icon: "🌙", tip: "Go out just after dark with a red-filtered torch — red light doesn't disturb them as much as white light." },
+      { icon: "🕳️", tip: "Find their burrows during the day (look for large mounds of disturbed earth) and wait quietly nearby at dusk." },
+      { icon: "❄️", tip: "Winter is best — wombats emerge earlier in the evening because the nights are longer and it cools down faster." },
+    ],
   },
   {
     id: "dingo",
@@ -178,6 +233,11 @@ const ANIMALS = [
     active: "Dawn and dusk",
     warning: "Never feed a dingo! It causes them to lose their fear of humans. On Fraser Island dingoes are known to be aggressive – report every encounter.",
     funFact: "The dingo arrived in Australia about 4,000 years ago with Asian traders. It likely caused the extinction of the thylacine on the mainland.",
+    spotting: [
+      { icon: "🏖️", tip: "Fraser Island (K'gari) in QLD has the purest dingo population in Australia — walk the beaches at dawn for the best chance." },
+      { icon: "🌅", tip: "Dawn and dusk along outback tracks — dingoes are crepuscular and often trot along roads in remote areas." },
+      { icon: "🔇", tip: "Stay quiet and still. Dingoes are curious by nature and will often approach if you don't make sudden movements." },
+    ],
   },
   {
     id: "wallaby",
@@ -193,6 +253,11 @@ const ANIMALS = [
     active: "Dawn and dusk",
     warning: "Same road risk as kangaroos at dusk – wallabies are smaller and harder to spot.",
     funFact: "Wallabies can pause embryo development (embryonic diapause) – a joey waits as a dormant embryo until the pouch is free.",
+    spotting: [
+      { icon: "🌿", tip: "Look at the edges of bushland and rainforest — wallabies prefer denser cover than kangaroos and are shyer." },
+      { icon: "🌄", tip: "Just after sunrise, check grassy clearings adjacent to forest. They graze briefly then retreat to shade." },
+      { icon: "🏕️", tip: "Many national park campsites are visited by wallabies at dusk — sit quietly outside your tent and wait." },
+    ],
   },
   {
     id: "tasmanian_devil",
@@ -208,6 +273,11 @@ const ANIMALS = [
     active: "Nocturnal",
     warning: "Don't linger near a Tasmanian devil at a carcass – it will defend its food with teeth and claws.",
     funFact: "The Tasmanian devil has one of the strongest bites relative to body size of any mammal. It suffers from a contagious facial tumour disease (DFTD) spread through biting.",
+    spotting: [
+      { icon: "🌙", tip: "Drive rural roads in Tasmania slowly after dark — devils scavenge roadkill and are regularly seen on roadsides." },
+      { icon: "👂", tip: "Listen for their eerie screams at night — groups gather noisily around carcasses and can be heard from far away." },
+      { icon: "🦘", tip: "Narawntapu National Park and the northwest coast of Tasmania have the highest densities for wild sightings." },
+    ],
   },
   {
     id: "emu",
@@ -223,6 +293,11 @@ const ANIMALS = [
     active: "Daytime",
     warning: "Emus can kick forward with tremendous force. Never chase one – in 1932, the Australian army famously lost a war against emus.",
     funFact: "The Great Emu War of 1932 – the Australian military with machine guns vs. 20,000 emus. The emus won. Major Meredith compared them to Zulus, each needing five bullets.",
+    spotting: [
+      { icon: "🌾", tip: "Open grassland, farmland, and scrubland in the morning — emus walk great distances daily and are hard to miss at 1.9 m tall." },
+      { icon: "💧", tip: "Find a waterhole in dry areas and wait — emus must drink daily and will walk kilometres to do so." },
+      { icon: "🚗", tip: "Driving through outback WA, SA, and QLD you're almost certain to spot them — they're fearless around slow-moving vehicles." },
+    ],
   },
   {
     id: "magpie",
@@ -238,6 +313,11 @@ const ANIMALS = [
     active: "Daytime",
     warning: "In spring: wear sunglasses or a bike helmet! Magpies target eyes. There's even a crowd-sourced attack map: magpiealert.com",
     funFact: "Magpies remember individual human faces for years. If you've been kind, they'll sing for you. If not… you already know.",
+    spotting: [
+      { icon: "🏙️", tip: "You don't need to look far — magpies are in almost every park, suburb, and school oval in Australia." },
+      { icon: "🌅", tip: "Early morning is when they sing most actively. Their carolling is one of Australia's most beautiful sounds." },
+      { icon: "🤝", tip: "To make friends with a local magpie: offer a small piece of cheese or mince, make eye contact, and visit daily. They'll remember you." },
+    ],
   },
   {
     id: "box_jellyfish",
@@ -253,5 +333,10 @@ const ANIMALS = [
     active: "Summer (October – April)",
     warning: "In northern Australia, NEVER swim without a stinger suit during season! Vinegar neutralises the tentacles – keep it on the beach. Death can occur within 2 minutes.",
     funFact: "Box jellyfish have 24 eyes (in 4 clusters of 6) – despite having no brain. They see the world around them in 360°.",
-  }
+    spotting: [
+      { icon: "🤿", tip: "Snorkelling at sheltered beaches in the NT and far north QLD outside stinger season (May–Sep) gives safe viewing opportunities." },
+      { icon: "🔦", tip: "They are attracted to lights at night — shine a torch into calm, shallow water near the shore after dark." },
+      { icon: "🧪", tip: "Marine research stations in Cairns and Darwin occasionally run guided night walks where scientists demonstrate safe identification." },
+    ],
+  },
 ];
