@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aussie Wildlife Finder 🦘</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sand: #F5F0E8;
+      --sand-dark: #E8DFC8;
+      --ochre: #C8832A;
+      --ochre-light: #E8A84A;
+      --rust: #B85A2A;
+      --green: #4A7C59;
+      --green-light: #6AAB7A;
+      --sky: #6B9FBF;
+      --text: #2C1F0E;
+      --text-muted: #7A6248;
+      --white: #FDFAF4;
+      --danger-5: #8B1A1A;
+      --danger-4: #B85A2A;
+      --danger-3: #C8832A;
+      --danger-2: #4A7C59;
+      --danger-1: #6B9FBF;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--sand);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* dot pattern background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, #C8832A22 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+
+    /* HEADER */
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo {
+      font-size: 3rem;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.05;
+      margin-bottom: 0.4rem;
+    }
+
+    .tagline {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* SEARCH BOX */
+    .search-section {
+      background: var(--white);
+      border: 1.5px solid var(--sand-dark);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .search-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+      display: block;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.95rem;
+      border: 1.5px solid var(--sand-dark);
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      background: var(--sand);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus { border-color: var(--ochre); }
+    input[type="text"]::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+    button.search-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 500;
+      background: var(--ochre);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      padding: 0.7rem 1.2rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    button.search-btn:hover { background: var(--rust); }
+    button.search-btn:active { transform: scale(0.97); }
+
+    .quick-links {
+      margin-top: 0.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .quick-pill {
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      background: var(--sand);
+      border: 1px solid var(--sand-dark);
+      border-radius: 100px;
+      padding: 0.25rem 0.7rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .quick-pill:hover { border-color: var(--ochre); color: var(--ochre); }
+
+    /* STATUS / RESULT HEADER */
+    #status {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 1.2rem;
+      min-height: 1.2em;
+    }
+
+    .location-found {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .location-badge {
+      background: var(--green);
+      color: var(--white);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 100px;
+    }
+
+    .state-badge {
+      background: var(--ochre);
+      color: var(--white);
+      font-size: 0.7rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 100px;
+    }
+
+    /* SEASON SELECTOR */
+    .season-bar {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .season-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--white);
+      border: 1.5px solid var(--sand-dark);
+      border-radius: 100px;
+      padding: 0.35rem 0.9rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .season-btn.active {
+      background: var(--ochre);
+      border-color: var(--ochre);
+      color: var(--white);
+    }
+
+    /* ANIMAL GRID */
+    #animals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .animal-card {
+      background: var(--white);
+      border: 1.5px solid var(--sand-dark);
+      border-radius: 14px;
+      padding: 1rem 1.1rem 0.9rem;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .animal-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--ochre-light);
+      box-shadow: 0 4px 16px #C8832A18;
+    }
+
+    .animal-card.active {
+      border-color: var(--ochre);
+      box-shadow: 0 4px 20px #C8832A28;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 0.6rem;
+    }
+
+    .animal-emoji {
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+
+    .danger-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+
+    .d1 { background: var(--danger-1); }
+    .d2 { background: var(--danger-2); }
+    .d3 { background: var(--danger-3); }
+    .d4 { background: var(--danger-4); }
+    .d5 { background: var(--danger-5); animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.3); }
+    }
+
+    .animal-name {
+      font-family: 'Fraunces', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+      line-height: 1.2;
+    }
+
+    .animal-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 0.7rem;
+    }
+
+    .chance-bar-wrap {
+      margin-bottom: 0.3rem;
+    }
+
+    .chance-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+    }
+
+    .chance-pct {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .bar-track {
+      height: 4px;
+      background: var(--sand-dark);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: var(--ochre);
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .bar-fill.high { background: var(--rust); }
+    .bar-fill.low { background: var(--sky); }
+
+    /* INFOBOX */
+    .infobox {
+      display: none;
+      margin-top: 0.8rem;
+      border-top: 1px dashed var(--sand-dark);
+      padding-top: 0.8rem;
+    }
+
+    .infobox.open { display: block; }
+
+    .info-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.72rem;
+      line-height: 1.4;
+    }
+
+    .info-icon { flex-shrink: 0; width: 1.1rem; }
+
+    .info-key {
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      min-width: 5rem;
+    }
+
+    .info-val { color: var(--text); }
+
+    .warning-box {
+      background: #8B1A1A12;
+      border: 1px solid #8B1A1A30;
+      border-radius: 8px;
+      padding: 0.5rem 0.7rem;
+      font-size: 0.7rem;
+      color: var(--danger-5);
+      margin: 0.6rem 0;
+      line-height: 1.5;
+    }
+
+    .funfact-box {
+      background: var(--sand);
+      border-radius: 8px;
+      padding: 0.5rem 0.7rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    .danger-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.5rem;
+      border-radius: 100px;
+      margin-bottom: 0.6rem;
+    }
+
+    .dtag-1 { background: #6B9FBF20; color: var(--sky); }
+    .dtag-2 { background: #4A7C5920; color: var(--green); }
+    .dtag-3 { background: #C8832A20; color: var(--ochre); }
+    .dtag-4 { background: #B85A2A20; color: var(--rust); }
+    .dtag-5 { background: #8B1A1A15; color: var(--danger-5); font-weight: 500; }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state .big { font-size: 3rem; margin-bottom: 0.5rem; }
+    .empty-state p { font-size: 0.8rem; line-height: 1.6; }
+
+    /* LOADER */
+    .loader {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 1.5rem;
+      height: 1.5rem;
+      border: 2px solid var(--sand-dark);
+      border-top-color: var(--ochre);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 0.5rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* LEGEND */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-bottom: 1.2rem;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      align-items: center;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 0.3rem; }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+
+    @media (max-width: 480px) {
+      #animals-grid { grid-template-columns: 1fr; }
+      .search-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="logo">🦘</span>
+    <h1>Aussie Wildlife Finder</h1>
+    <p class="tagline">Zadej australskou adresu · zjisti, co tě čeká</p>
+  </header>
+
+  <div class="search-section">
+    <label class="search-label" for="addr-input">Australská adresa nebo město</label>
+    <div class="search-row">
+      <input type="text" id="addr-input" placeholder="např. Bondi Beach, Sydney NSW" autocomplete="off" />
+      <button class="search-btn" onclick="doSearch()">🔍 Hledat</button>
+    </div>
+    <div class="quick-links">
+      <span class="quick-pill" onclick="quickSearch('Sydney, NSW')">Sydney</span>
+      <span class="quick-pill" onclick="quickSearch('Melbourne, VIC')">Melbourne</span>
+      <span class="quick-pill" onclick="quickSearch('Brisbane, QLD')">Brisbane</span>
+      <span class="quick-pill" onclick="quickSearch('Darwin, NT')">Darwin</span>
+      <span class="quick-pill" onclick="quickSearch('Cairns, QLD')">Cairns</span>
+      <span class="quick-pill" onclick="quickSearch('Alice Springs, NT')">Alice Springs</span>
+      <span class="quick-pill" onclick="quickSearch('Hobart, TAS')">Hobart</span>
+      <span class="quick-pill" onclick="quickSearch('Perth, WA')">Perth</span>
+    </div>
+  </div>
+
+  <div id="status"></div>
+  <div id="season-wrap" style="display:none">
+    <div class="season-bar">
+      <span class="season-btn" data-s="summer" onclick="setSeason('summer')">☀️ Léto (Dec–Feb)</span>
+      <span class="season-btn" data-s="autumn" onclick="setSeason('autumn')">🍂 Podzim (Mar–May)</span>
+      <span class="season-btn" data-s="winter" onclick="setSeason('winter')">❄️ Zima (Jun–Aug)</span>
+      <span class="season-btn" data-s="spring" onclick="setSeason('spring')">🌸 Jaro (Sep–Nov)</span>
+    </div>
+    <div class="legend">
+      <span>Nebezpečnost:</span>
+      <span class="legend-item"><span class="danger-dot d1" style="display:inline-block"></span> bezpečný</span>
+      <span class="legend-item"><span class="danger-dot d2" style="display:inline-block"></span> nízké riziko</span>
+      <span class="legend-item"><span class="danger-dot d3" style="display:inline-block"></span> mírné riziko</span>
+      <span class="legend-item"><span class="danger-dot d4" style="display:inline-block"></span> nebezpečný</span>
+      <span class="legend-item"><span class="danger-dot d5" style="display:inline-block"></span> smrtelně nebezpečný</span>
+    </div>
+  </div>
+
+  <div id="animals-grid">
+    <div class="empty-state">
+      <div class="big">🗺️</div>
+      <p>Zadej libovolnou australskou adresu<br>a zjisti, jaká zvířata tě tam čekají</p>
+    </div>
+  </div>
+
+  <footer>
+    Data jsou orientační · výskyt závisí na ročním období, prostředí a štěstí<br>
+    Geocoding: OpenStreetMap Nominatim · Postaveno s ❤️ pro otužilce v Brisbane 🦘
+  </footer>
+</div>
+
+<script src="animals.js"></script>
+<script>
+  let currentState = null;
+  let currentSeason = getCurrentSeason();
+  let currentRegionType = 'urban'; // or rural
+  let openCard = null;
+
+  function getCurrentSeason() {
+    const m = new Date().getMonth(); // 0-based, southern hemisphere
+    if (m >= 11 || m <= 1) return 'summer';
+    if (m >= 2 && m <= 4) return 'autumn';
+    if (m >= 5 && m <= 7) return 'winter';
+    return 'spring';
+  }
+
+  function setSeason(s) {
+    currentSeason = s;
+    document.querySelectorAll('.season-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.s === s);
+    });
+    if (currentState) renderAnimals();
+  }
+
+  function quickSearch(q) {
+    document.getElementById('addr-input').value = q;
+    doSearch();
+  }
+
+  async function doSearch() {
+    const q = document.getElementById('addr-input').value.trim();
+    if (!q) return;
+
+    const grid = document.getElementById('animals-grid');
+    const status = document.getElementById('status');
+
+    grid.innerHTML = '<div class="loader"><div class="spinner"></div><br>Hledám adresu...</div>';
+    status.innerHTML = '';
+    document.getElementById('season-wrap').style.display = 'none';
+
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ', Australia')}&format=json&addressdetails=1&limit=1`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'cs,en' } });
+      const data = await res.json();
+
+      if (!data.length) {
+        grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Adresu se nepodařilo najít.<br>Zkus přidat název státu, např. "Darwin, NT"</p></div>';
+        return;
+      }
+
+      const place = data[0];
+      const addr = place.address;
+
+      // Detect AU state
+      const stateMap = {
+        'Queensland': 'QLD', 'New South Wales': 'NSW', 'Victoria': 'VIC',
+        'South Australia': 'SA', 'Western Australia': 'WA',
+        'Northern Territory': 'NT', 'Tasmania': 'TAS',
+        'Australian Capital Territory': 'ACT'
+      };
+
+      const stateFull = addr.state || '';
+      currentState = stateMap[stateFull] || null;
+
+      // Urban vs rural guess from place type
+      const placeType = place.type || '';
+      currentRegionType = ['city','town','suburb','quarter','neighbourhood'].includes(placeType) ? 'urban' : 'rural';
+
+      const displayName = [addr.suburb || addr.quarter || addr.city || addr.town || addr.village || place.name, currentState].filter(Boolean).join(', ');
+
+      status.innerHTML = `
+        <div class="location-found">
+          <span class="location-badge">📍 Nalezeno</span>
+          <span>${displayName}</span>
+          ${currentState ? `<span class="state-badge">${currentState}</span>` : ''}
+          <span style="color:var(--text-muted); font-size:0.7rem">${currentRegionType === 'urban' ? '🏙️ město' : '🌿 venkov'}</span>
+        </div>`;
+
+      document.getElementById('season-wrap').style.display = 'block';
+      setSeason(currentSeason);
+      renderAnimals();
+
+    } catch (e) {
+      grid.innerHTML = '<div class="empty-state"><div class="big">⚠️</div><p>Chyba při načítání. Zkontroluj připojení.</p></div>';
+    }
+  }
+
+  function calcChance(animal) {
+    if (!currentState) return 0;
+    const regionBase = currentRegionType === 'urban' ? animal.urban : animal.rural;
+    const regionWeight = animal.regions[currentState] || 0;
+    const seasonMod = animal.seasons[currentSeason] || 50;
+
+    // Weighted blend: 40% region data, 35% urban/rural, 25% season
+    const raw = (regionWeight * 0.4) + (regionBase * 0.35) + (seasonMod * 0.25);
+    return Math.round(Math.min(raw, 99));
+  }
+
+  function renderAnimals() {
+    openCard = null;
+    const grid = document.getElementById('animals-grid');
+
+    const sorted = [...ANIMALS].map(a => ({ ...a, chance: calcChance(a) }))
+      .sort((a, b) => b.chance - a.chance);
+
+    grid.innerHTML = sorted.map(a => buildCard(a)).join('');
+  }
+
+  function buildCard(a) {
+    const chance = a.chance;
+    const fillClass = chance >= 70 ? 'high' : chance <= 30 ? 'low' : '';
+    const dtag = `dtag-${a.danger}`;
+
+    return `<div class="animal-card" id="card-${a.id}" onclick="toggleCard('${a.id}')">
+      <div class="card-top">
+        <span class="animal-emoji">${a.emoji}</span>
+        <span class="danger-dot d${a.danger}"></span>
+      </div>
+      <div class="animal-name">${a.name}</div>
+      <div class="animal-desc">${a.description}</div>
+      <div class="chance-bar-wrap">
+        <div class="chance-label">
+          <span>šance pozorování</span>
+          <span class="chance-pct">${chance} %</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill ${fillClass}" style="width:${chance}%"></div></div>
+      </div>
+      <div class="infobox" id="info-${a.id}">
+        <span class="danger-tag ${dtag}">${a.dangerLabel}</span>
+        <div class="info-row"><span class="info-icon">📅</span><span class="info-key">Aktivní:</span><span class="info-val">${a.active}</span></div>
+        <div class="info-row"><span class="info-icon">💕</span><span class="info-key">Páření:</span><span class="info-val">${a.mating}</span></div>
+        ${a.warning ? `<div class="warning-box">⚠️ ${a.warning}</div>` : ''}
+        <div class="funfact-box">💡 ${a.funFact}</div>
+      </div>
+    </div>`;
+  }
+
+  function toggleCard(id) {
+    const card = document.getElementById('card-' + id);
+    const info = document.getElementById('info-' + id);
+    const isOpen = info.classList.contains('open');
+
+    // close previously open
+    if (openCard && openCard !== id) {
+      document.getElementById('info-' + openCard)?.classList.remove('open');
+      document.getElementById('card-' + openCard)?.classList.remove('active');
+    }
+
+    info.classList.toggle('open', !isOpen);
+    card.classList.toggle('active', !isOpen);
+    openCard = isOpen ? null : id;
+  }
+
+  // Enter key
+  document.getElementById('addr-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  // Set initial season button
+  setSeason(currentSeason);
+</script>
+</body>
+</html>
