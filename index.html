@@ -290,7 +290,27 @@
       font-style: italic;
     }
 
-    /* EMPTY + LOADER */
+    .spotting-box {
+      margin-top: 0.6rem;
+      border-top: 1px dashed var(--sand-dark);
+      padding-top: 0.6rem;
+    }
+    .spotting-title {
+      font-size: 0.63rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .spotting-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+      font-size: 0.7rem;
+      line-height: 1.45;
+      color: var(--text);
+    }
+    .spotting-icon { flex-shrink: 0; width: 1.1rem; }
     .empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--text-muted); grid-column: 1 / -1; width: 100%; }
     .empty-state .big { font-size: 3.5rem; margin-bottom: 0.6rem; }
     .empty-state p { font-size: 0.78rem; line-height: 1.7; }
@@ -366,7 +386,7 @@
 
   <footer>
     Data is indicative · sightings depend on season, habitat and luck<br>
-    Geocoding: OpenStreetMap Nominatim · Built with ❤️
+    Geocoding: OpenStreetMap Nominatim · Built with ❤️ for cold water swimmers dreaming of Brisbane 🦘
   </footer>
 </div>
 
@@ -547,6 +567,10 @@
         <div class="info-row"><span class="info-icon">💕</span><span class="info-key">Mating:</span><span class="info-val">${a.mating}</span></div>
         ${a.warning ? `<div class="warning-box">⚠️ ${a.warning}</div>` : ''}
         <div class="funfact-box">💡 ${a.funFact}</div>
+        ${a.spotting ? `<div class="spotting-box">
+          <div class="spotting-title">🔍 Spotting tips</div>
+          ${a.spotting.map(s => `<div class="spotting-row"><span class="spotting-icon">${s.icon}</span><span>${s.tip}</span></div>`).join('')}
+        </div>` : ''}
       </div>
     </div>`;
   }
