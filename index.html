@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aussie Wildlife Finder 🦘</title>
+  <title>Aussie Wildlife Finder</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦘</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
@@ -261,22 +262,6 @@
       font-style: italic;
     }
 
-    /* CLICK HINT */
-    .hint-wrap { position: relative; overflow: visible; }
-    .click-hint {
-      position: absolute;
-      top: -1.8rem;
-      right: -4rem;
-      width: 140px;
-      pointer-events: none;
-      animation: hint-bob 2.2s ease-in-out infinite;
-      z-index: 20;
-    }
-    @keyframes hint-bob {
-      0%, 100% { transform: translateY(0) rotate(-1deg); }
-      50% { transform: translateY(-6px) rotate(2deg); }
-    }
-
     /* EMPTY + LOADER */
     .empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--text-muted); grid-column: 1 / -1; width: 100%; }
     .empty-state .big { font-size: 3.5rem; margin-bottom: 0.6rem; }
@@ -353,7 +338,7 @@
 
   <footer>
     Data is indicative · sightings depend on season, habitat and luck<br>
-    Geocoding: OpenStreetMap Nominatim · Built with ❤️ for cold water swimmers dreaming of Brisbane 🦘
+    Geocoding: OpenStreetMap Nominatim · Built with ❤️
   </footer>
 </div>
 
@@ -494,21 +479,13 @@
   function renderAnimals() {
     openCardId = null;
     const sorted = ANIMALS.map(a => ({ ...a, chance: calcChance(a) })).sort((a, b) => b.chance - a.chance);
-    document.getElementById('animals-grid').innerHTML = sorted.map((a, i) => buildCard(a, i === 0)).join('');
+    document.getElementById('animals-grid').innerHTML = sorted.map(a => buildCard(a)).join('');
   }
 
-  function buildCard(a, showHint) {
+  function buildCard(a) {
     const c = a.chance;
     const fillClass = c >= 70 ? 'hi' : c <= 30 ? 'lo' : '';
-    const hint = showHint ? `<div class="click-hint">
-      <svg viewBox="0 0 140 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <text x="4" y="18" font-family="Fraunces, Georgia, serif" font-size="13" font-style="italic" fill="#C8832A" letter-spacing="0.2">click for</text>
-        <text x="4" y="34" font-family="Fraunces, Georgia, serif" font-size="13" font-style="italic" fill="#C8832A" letter-spacing="0.2">more info</text>
-        <path d="M 38 44 C 42 52, 38 62, 28 72" stroke="#C8832A" stroke-width="2" stroke-linecap="round" fill="none"/>
-        <path d="M 28 72 L 22 64 M 28 72 L 36 66" stroke="#C8832A" stroke-width="2" stroke-linecap="round" fill="none"/>
-      </svg>
-    </div>` : '';
-    return `<div class="animal-card hint-wrap" id="card-${a.id}" onclick="toggleCard('${a.id}')">
+    return `<div class="animal-card" id="card-${a.id}" onclick="toggleCard('${a.id}')">
       <div class="card-top">
         <span class="animal-emoji">${a.emoji}</span>
         <span class="danger-dot d${a.danger}"></span>
@@ -526,7 +503,6 @@
         ${a.warning ? `<div class="warning-box">⚠️ ${a.warning}</div>` : ''}
         <div class="funfact-box">💡 ${a.funFact}</div>
       </div>
-      ${hint}
     </div>`;
   }
 
@@ -543,9 +519,6 @@
     info.classList.toggle('open', !isOpen);
     card.classList.toggle('open', !isOpen);
     openCardId = isOpen ? null : id;
-
-    // hide the click hint once user has clicked anything
-    document.querySelector('.click-hint')?.remove();
   }
 
   document.getElementById('addr-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
