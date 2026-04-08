@@ -10,6 +10,26 @@ https://lucieranglova.github.io/wildlife-near-me/
 
 ---
 
+## 🆕 Update — Spotting Tips
+ 
+Each animal card now includes a **🔍 Spotting Tips** section inside the expanded infobox. Every animal has 3 tips covering:
+ 
+- **Time of day** — when to go out (dawn, dusk, night, mid-morning...)
+- **Where to look** — specific habitat, terrain, or landmark type
+- **Technique** — what to listen for, bring, or do to maximise your chances
+ 
+Tips are defined in `animals.js` as a `spotting` array on each animal object:
+ 
+```js
+spotting: [
+  { icon: "🌙", tip: "Go out just after dark with a red-filtered torch — red light doesn't disturb them." },
+  { icon: "🕳️", tip: "Find burrows during the day and wait quietly nearby at dusk." },
+  { icon: "❄️", tip: "Winter is best — they emerge earlier because the nights are longer." },
+],
+```
+ 
+To add tips when adding a new animal, include a `spotting` field with 2–3 entries. The field is optional — cards without it will just skip the section.
+
 ## ✨ Features
 
 - **Address search** — type any Australian address or city and get localised results
@@ -116,10 +136,5 @@ Open `animals.js` and add a new entry to the `ANIMALS` array:
 
 ---
 
-## 📝 License
-
-MIT — do whatever you like with it.
-
----
 
 *Built with ❤️ 
