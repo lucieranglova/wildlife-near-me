@@ -262,29 +262,19 @@
     }
 
     /* CLICK HINT */
-    .hint-wrap { position: relative; }
+    .hint-wrap { position: relative; overflow: visible; }
     .click-hint {
       position: absolute;
-      bottom: -2.8rem;
-      left: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
+      top: -1.8rem;
+      right: -4rem;
+      width: 140px;
       pointer-events: none;
-      animation: hint-bob 1.8s ease-in-out infinite;
-      z-index: 10;
-    }
-    .click-hint .hint-arrow { font-size: 1.3rem; transform: rotate(20deg); display: inline-block; }
-    .click-hint .hint-text {
-      font-family: 'Fraunces', serif;
-      font-size: 0.8rem;
-      font-style: italic;
-      color: var(--ochre);
-      white-space: nowrap;
+      animation: hint-bob 2.2s ease-in-out infinite;
+      z-index: 20;
     }
     @keyframes hint-bob {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
+      0%, 100% { transform: translateY(0) rotate(-1deg); }
+      50% { transform: translateY(-6px) rotate(2deg); }
     }
 
     /* EMPTY + LOADER */
@@ -510,7 +500,14 @@
   function buildCard(a, showHint) {
     const c = a.chance;
     const fillClass = c >= 70 ? 'hi' : c <= 30 ? 'lo' : '';
-    const hint = showHint ? `<div class="click-hint"><span class="hint-arrow">👆</span><span class="hint-text">click for more info</span></div>` : '';
+    const hint = showHint ? `<div class="click-hint">
+      <svg viewBox="0 0 140 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="4" y="18" font-family="Fraunces, Georgia, serif" font-size="13" font-style="italic" fill="#C8832A" letter-spacing="0.2">click for</text>
+        <text x="4" y="34" font-family="Fraunces, Georgia, serif" font-size="13" font-style="italic" fill="#C8832A" letter-spacing="0.2">more info</text>
+        <path d="M 38 44 C 42 52, 38 62, 28 72" stroke="#C8832A" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <path d="M 28 72 L 22 64 M 28 72 L 36 66" stroke="#C8832A" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>` : '';
     return `<div class="animal-card hint-wrap" id="card-${a.id}" onclick="toggleCard('${a.id}')">
       <div class="card-top">
         <span class="animal-emoji">${a.emoji}</span>
