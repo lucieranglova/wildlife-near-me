@@ -261,8 +261,34 @@
       font-style: italic;
     }
 
+    /* CLICK HINT */
+    .hint-wrap { position: relative; }
+    .click-hint {
+      position: absolute;
+      bottom: -2.8rem;
+      left: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      pointer-events: none;
+      animation: hint-bob 1.8s ease-in-out infinite;
+      z-index: 10;
+    }
+    .click-hint .hint-arrow { font-size: 1.3rem; transform: rotate(20deg); display: inline-block; }
+    .click-hint .hint-text {
+      font-family: 'Fraunces', serif;
+      font-size: 0.8rem;
+      font-style: italic;
+      color: var(--ochre);
+      white-space: nowrap;
+    }
+    @keyframes hint-bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
     /* EMPTY + LOADER */
-    .empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--text-muted); }
+    .empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--text-muted); grid-column: 1 / -1; width: 100%; }
     .empty-state .big { font-size: 3.5rem; margin-bottom: 0.6rem; }
     .empty-state p { font-size: 0.78rem; line-height: 1.7; }
     .loader { text-align: center; padding: 3rem; font-size: 0.78rem; color: var(--text-muted); }
@@ -337,7 +363,7 @@
 
   <footer>
     Data is indicative · sightings depend on season, habitat and luck<br>
-    Geocoding: OpenStreetMap Nominatim · Built with ❤️
+    Geocoding: OpenStreetMap Nominatim · Built with ❤️ for cold water swimmers dreaming of Brisbane 🦘
   </footer>
 </div>
 
@@ -428,7 +454,7 @@
 
         const placeType = props.type || props.osm_value || '';
         const regionType = ['city','town','suburb','quarter','neighbourhood','village','borough'].includes(placeType) ? 'urban' : 'rural';
-        const label = [props.name || props.city || props.town || props.village, state].filter(Boolean).join(', ');
+        const label = props.name || props.city || props.town || props.village || raw;
 
         applyResult(state, label, regionType);
         return;
@@ -456,7 +482,7 @@
 
         const placeType = place.type || '';
         const regionType = ['city','town','suburb','quarter','neighbourhood','village'].includes(placeType) ? 'urban' : 'rural';
-        const label = [addr.suburb || addr.city || addr.town || addr.village || place.name, state].filter(Boolean).join(', ');
+        const label = addr.suburb || addr.city || addr.town || addr.village || place.name || raw;
 
         applyResult(state, label, regionType);
         return;
@@ -478,13 +504,14 @@
   function renderAnimals() {
     openCardId = null;
     const sorted = ANIMALS.map(a => ({ ...a, chance: calcChance(a) })).sort((a, b) => b.chance - a.chance);
-    document.getElementById('animals-grid').innerHTML = sorted.map(buildCard).join('');
+    document.getElementById('animals-grid').innerHTML = sorted.map((a, i) => buildCard(a, i === 0)).join('');
   }
 
-  function buildCard(a) {
+  function buildCard(a, showHint) {
     const c = a.chance;
     const fillClass = c >= 70 ? 'hi' : c <= 30 ? 'lo' : '';
-    return `<div class="animal-card" id="card-${a.id}" onclick="toggleCard('${a.id}')">
+    const hint = showHint ? `<div class="click-hint"><span class="hint-arrow">👆</span><span class="hint-text">click for more info</span></div>` : '';
+    return `<div class="animal-card hint-wrap" id="card-${a.id}" onclick="toggleCard('${a.id}')">
       <div class="card-top">
         <span class="animal-emoji">${a.emoji}</span>
         <span class="danger-dot d${a.danger}"></span>
@@ -502,6 +529,7 @@
         ${a.warning ? `<div class="warning-box">⚠️ ${a.warning}</div>` : ''}
         <div class="funfact-box">💡 ${a.funFact}</div>
       </div>
+      ${hint}
     </div>`;
   }
 
@@ -518,6 +546,9 @@
     info.classList.toggle('open', !isOpen);
     card.classList.toggle('open', !isOpen);
     openCardId = isOpen ? null : id;
+
+    // hide the click hint once user has clicked anything
+    document.querySelector('.click-hint')?.remove();
   }
 
   document.getElementById('addr-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
