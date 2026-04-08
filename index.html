@@ -135,18 +135,6 @@
     .badge-ochre { background: var(--ochre); }
     .badge-sky { background: var(--sky); }
 
-    /* DEMO BANNER */
-    .demo-banner {
-      background: #6B9FBF18;
-      border: 1px solid #6B9FBF50;
-      border-radius: 10px;
-      padding: 0.6rem 1rem;
-      font-size: 0.72rem;
-      color: var(--sky);
-      margin-bottom: 1.2rem;
-      display: none;
-    }
-
     /* SEASON BAR */
     .season-bar { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
     .season-btn {
@@ -320,9 +308,6 @@
     </div>
   </div>
 
-  <div id="demo-banner" class="demo-banner">
-    📍 Showing demo results for <strong id="demo-city"></strong> — geocoding works on GitHub Pages.
-  </div>
 
   <div id="status"></div>
 
@@ -366,17 +351,7 @@
     'Australian Capital Territory': 'ACT'
   };
 
-  // Demo data for when geocoding API is unavailable (e.g. local preview)
-  const DEMO_STATES = {
-    'sydney': { state: 'NSW', label: 'Sydney, NSW', type: 'urban' },
-    'melbourne': { state: 'VIC', label: 'Melbourne, VIC', type: 'urban' },
-    'brisbane': { state: 'QLD', label: 'Brisbane, QLD', type: 'urban' },
-    'darwin': { state: 'NT', label: 'Darwin, NT', type: 'urban' },
-    'cairns': { state: 'QLD', label: 'Cairns, QLD', type: 'urban' },
-    'alice springs': { state: 'NT', label: 'Alice Springs, NT', type: 'rural' },
-    'hobart': { state: 'TAS', label: 'Hobart, TAS', type: 'urban' },
-    'perth': { state: 'WA', label: 'Perth, WA', type: 'urban' },
-  };
+
 
   let currentState = null;
   let currentSeason = getCurrentAuSeason();
@@ -402,7 +377,7 @@
     doSearch();
   }
 
-  function applyResult(state, label, regionType, isDemo) {
+  function applyResult(state, label, regionType) {
     currentState = state;
     currentRegion = regionType;
 
@@ -413,14 +388,6 @@
         <span class="badge badge-ochre">${state}</span>
         <span class="badge badge-sky">${regionType === 'urban' ? '🏙️ urban' : '🌿 rural'}</span>
       </div>`;
-
-    if (isDemo) {
-      const banner = document.getElementById('demo-banner');
-      document.getElementById('demo-city').textContent = label;
-      banner.style.display = 'block';
-    } else {
-      document.getElementById('demo-banner').style.display = 'none';
-    }
 
     document.getElementById('controls').style.display = 'block';
     setSeason(currentSeason);
@@ -435,20 +402,52 @@
     const status = document.getElementById('status');
     grid.innerHTML = '<div class="loader"><span class="spinner"></span>Finding your location…</div>';
     status.innerHTML = '';
-    document.getElementById('demo-banner').style.display = 'none';
     document.getElementById('controls').style.display = 'none';
 
-    // Try live geocoding first
+    // Photon (Komoot) – no CORS issues, no API key, great for browser use
     try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(raw + ', Australia')}&format=json&addressdetails=1&limit=1`;
-      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+      const q = encodeURIComponent(raw);
+      const url = `https://photon.komoot.io/api/?q=${q}&limit=5&lang=en`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      // Filter to Australia only
+      const auFeature = data.features?.find(f => f.properties?.country === 'Australia');
+
+      if (auFeature) {
+        const props = auFeature.properties;
+
+        // Photon returns state in 'state' property
+        const stateFull = props.state || '';
+        const state = STATE_MAP[stateFull] || null;
+
+        if (!state) {
+          grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Couldn\'t detect an Australian state.<br>Try adding the state, e.g. "Darwin, NT"</p></div>';
+          return;
+        }
+
+        const placeType = props.type || props.osm_value || '';
+        const regionType = ['city','town','suburb','quarter','neighbourhood','village','borough'].includes(placeType) ? 'urban' : 'rural';
+        const label = [props.name || props.city || props.town || props.village, state].filter(Boolean).join(', ');
+
+        applyResult(state, label, regionType);
+        return;
+      }
+    } catch (e) {
+      console.warn('Photon failed:', e);
+    }
+
+    // Fallback: Nominatim (simple GET, no custom headers = no CORS preflight)
+    try {
+      const q = encodeURIComponent(raw + ' Australia');
+      const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&addressdetails=1&limit=1&countrycodes=au`;
+      const res = await fetch(url);
       const data = await res.json();
 
       if (data.length) {
         const place = data[0];
         const addr = place.address;
-        const stateFull = addr.state || '';
-        const state = STATE_MAP[stateFull] || null;
+        const state = STATE_MAP[addr.state || ''] || null;
 
         if (!state) {
           grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Couldn\'t detect an Australian state.<br>Try adding the state, e.g. "Darwin, NT"</p></div>';
@@ -457,23 +456,16 @@
 
         const placeType = place.type || '';
         const regionType = ['city','town','suburb','quarter','neighbourhood','village'].includes(placeType) ? 'urban' : 'rural';
-        const label = [addr.suburb || addr.quarter || addr.city || addr.town || addr.village || place.name, state].filter(Boolean).join(', ');
+        const label = [addr.suburb || addr.city || addr.town || addr.village || place.name, state].filter(Boolean).join(', ');
 
-        applyResult(state, label, regionType, false);
+        applyResult(state, label, regionType);
         return;
       }
-    } catch (_) {
-      // Geocoding blocked (local preview) – fall through to demo mode
+    } catch (e) {
+      console.warn('Nominatim failed:', e);
     }
 
-    // Demo fallback: match known city names
-    const key = raw.toLowerCase().replace(/,.*/, '').trim();
-    const demo = DEMO_STATES[key];
-    if (demo) {
-      applyResult(demo.state, demo.label, demo.type, true);
-    } else {
-      grid.innerHTML = `<div class="empty-state"><div class="big">🌐</div><p>Geocoding is blocked in this preview.<br>On GitHub Pages it works live.<br><br>Try one of the quick links above!</p></div>`;
-    }
+    grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Location not found.<br>Try a different address or add the state, e.g. "Darwin, NT"</p></div>';
   }
 
   function calcChance(animal) {
