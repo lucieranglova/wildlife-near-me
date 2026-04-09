@@ -157,6 +157,27 @@
     .season-btn[data-s="winter"].active  { background: #4A7C9E; border-color: #4A7C9E; }
     .season-btn[data-s="spring"].active  { background: #A0566A; border-color: #A0566A; }
 
+    /* CATEGORY BAR */
+    .cat-bar { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .cat-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem; letter-spacing: 0.05em;
+      background: var(--white); border: 1.5px solid var(--sand-dark);
+      border-radius: 100px; padding: 0.3rem 0.85rem;
+      cursor: pointer; color: var(--text-muted); transition: all 0.15s;
+    }
+    .cat-btn:hover { border-color: var(--text-muted); color: var(--text); }
+    .cat-btn.active { background: var(--text); border-color: var(--text); color: var(--white); }
+
+    /* CATEGORY SECTION */
+    .cat-section { margin-bottom: 2rem; }
+    .cat-heading {
+      font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 0.8rem;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .cat-heading::after { content: ''; flex: 1; height: 1px; background: var(--sand-dark); }
+
     /* LEGEND */
     .legend {
       display: flex;
@@ -367,6 +388,15 @@
       <button class="season-btn" data-s="winter" onclick="setSeason('winter')">❄️ Winter (Jun–Aug)</button>
       <button class="season-btn" data-s="spring" onclick="setSeason('spring')">🌸 Spring (Sep–Nov)</button>
     </div>
+    <div class="cat-bar">
+      <button class="cat-btn active" data-c="all" onclick="setCategory('all')">🐾 All</button>
+      <button class="cat-btn" data-c="mammals" onclick="setCategory('mammals')">🦘 Mammals</button>
+      <button class="cat-btn" data-c="birds" onclick="setCategory('birds')">🐦 Birds</button>
+      <button class="cat-btn" data-c="reptiles" onclick="setCategory('reptiles')">🦎 Reptiles</button>
+      <button class="cat-btn" data-c="marine" onclick="setCategory('marine')">🌊 Marine</button>
+      <button class="cat-btn" data-c="arachnids" onclick="setCategory('arachnids')">🕷️ Arachnids</button>
+      <button class="cat-btn" data-c="insects" onclick="setCategory('insects')">🐜 Insects</button>
+    </div>
     <div class="legend">
       <span>Danger level:</span>
       <span class="legend-item"><span class="dot d1"></span>safe</span>
@@ -386,7 +416,7 @@
 
   <footer>
     Sighting chance based on regional distribution data · Geocoding: OpenStreetMap · Coastal detection via Haversine<br>
-    Built with ❤️
+    Built with ❤️ for cold water swimmers dreaming of Brisbane 🦘
   </footer>
 </div>
 
@@ -428,6 +458,7 @@
   let currentLat     = null;
   let currentLon     = null;
   let currentCoastal = false;
+  let currentCategory = 'all';
   let openCardId     = null;
 
   // --- Helpers ---
@@ -450,6 +481,21 @@
     return COAST_POINTS.some(([clat, clon]) => haversine(lat, lon, clat, clon) < 120);
   }
 
+  function setCategory(c) {
+    currentCategory = c;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.c === c));
+    if (currentState !== null) renderAnimals();
+  }
+
+  const CATEGORIES = [
+    { id: 'mammals',   label: '🦘 Mammals' },
+    { id: 'birds',     label: '🐦 Birds' },
+    { id: 'reptiles',  label: '🦎 Reptiles' },
+    { id: 'marine',    label: '🌊 Marine' },
+    { id: 'arachnids', label: '🕷️ Arachnids' },
+    { id: 'insects',   label: '🐜 Insects' },
+  ];
+
   // --- Chance calculation (static data + coastal check) ---
   function calcChance(animal) {
     if ((animal.coastalOnly || animal.marineOnly) && !currentCoastal) return 0;
@@ -465,12 +511,22 @@
   // --- Render ---
   function renderAnimals() {
     const grid = document.getElementById('animals-grid');
-    const cards = ANIMALS
+    const all = ANIMALS
       .map(a => ({ ...a, chance: calcChance(a) }))
-      .filter(a => !((a.coastalOnly || a.marineOnly) && !currentCoastal))
-      .sort((a, b) => b.chance - a.chance);
+      .filter(a => !((a.coastalOnly || a.marineOnly) && !currentCoastal));
     openCardId = null;
-    grid.innerHTML = cards.map(buildCard).join('');
+
+    grid.innerHTML = CATEGORIES.map(cat => {
+      if (currentCategory !== 'all' && currentCategory !== cat.id) return '';
+      const animals = all.filter(a => a.category === cat.id).sort((a, b) => b.chance - a.chance);
+      if (!animals.length) return '';
+      return `<div class="cat-section" style="grid-column:1/-1">
+        <div class="cat-heading">${cat.label}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem">
+          ${animals.map(buildCard).join('')}
+        </div>
+      </div>`;
+    }).join('');
   }
 
   function buildCard(a) {
