@@ -1,3 +1,9 @@
+// GBIF taxonKey: backbone species ID from gbif.org/species/<key>
+// gbifGenus: used for dangerous species where point records are sparse
+// coastalOnly: true = hide if location is >80km from coast (calculated via bbox)
+// marineOnly: true = only show for coastal/marine locations
+// gbifRadius: search radius in km (default 50)
+
 const ANIMALS = [
   {
     id: "huntsman",
@@ -6,8 +12,9 @@ const ANIMALS = [
     danger: 3,
     dangerLabel: "mildly dangerous",
     description: "Australia's largest spider – scarier looking than it actually is.",
-    regions: { QLD: 92, NSW: 88, VIC: 72, SA: 65, WA: 78, NT: 85, TAS: 30, ACT: 60 },
-    urban: 85, rural: 75,
+    gbifKey: 2157358,   // Holconia (Huntsman genus, broad coverage)
+    gbifFallbackKey: 3257555, // Sparassidae family
+    gbifRadius: 30,
     seasons: { summer: 90, autumn: 70, winter: 40, spring: 80 },
     mating: "October – January",
     active: "Year-round, peak in summer",
@@ -26,8 +33,10 @@ const ANIMALS = [
     danger: 5,
     dangerLabel: "EXTREMELY DANGEROUS",
     description: "One of the world's most venomous spiders. The Sydney funnel-web is legendary.",
-    regions: { QLD: 60, NSW: 95, VIC: 20, SA: 5, WA: 2, NT: 10, TAS: 5, ACT: 70 },
-    urban: 60, rural: 70,
+    gbifKey: 2157720,  // Atracidae family (funnel-webs)
+    gbifRadius: 50,
+    // Use static cap: records are sparse but danger is highly localised
+    staticMaxPct: 60,  // never exceed 60% even with many records
     seasons: { summer: 95, autumn: 60, winter: 20, spring: 70 },
     mating: "January – March (males roam for females)",
     active: "Summer – especially after rain",
@@ -46,8 +55,9 @@ const ANIMALS = [
     danger: 5,
     dangerLabel: "DEADLY",
     description: "The world's largest reptile. Completely at home in northern Australia.",
-    regions: { QLD: 75, NSW: 5, VIC: 0, SA: 0, WA: 60, NT: 98, TAS: 0, ACT: 0 },
-    urban: 15, rural: 85,
+    gbifKey: 2440064,  // Crocodylus porosus
+    gbifRadius: 100,
+    coastalOnly: true,
     seasons: { summer: 95, autumn: 70, winter: 50, spring: 80 },
     mating: "September – October",
     active: "Year-round – more aggressive in warmer months",
@@ -66,8 +76,8 @@ const ANIMALS = [
     danger: 2,
     dangerLabel: "low risk",
     description: "The smaller cousin – only attacks when disturbed.",
-    regions: { QLD: 80, NSW: 0, VIC: 0, SA: 0, WA: 70, NT: 95, TAS: 0, ACT: 0 },
-    urban: 10, rural: 80,
+    gbifKey: 2440063,  // Crocodylus johnstoni
+    gbifRadius: 100,
     seasons: { summer: 85, autumn: 65, winter: 45, spring: 75 },
     mating: "August – September",
     active: "Year-round",
@@ -86,8 +96,9 @@ const ANIMALS = [
     danger: 1,
     dangerLabel: "generally safe",
     description: "Australia's iconic symbol. You'll find them almost everywhere.",
-    regions: { QLD: 90, NSW: 95, VIC: 88, SA: 85, WA: 80, NT: 75, TAS: 60, ACT: 95 },
-    urban: 60, rural: 98,
+    // Use genus Macropus + Osphranter to cover Eastern Grey, Red, Western Grey
+    gbifKey: 2440171,  // Macropus genus
+    gbifRadius: 50,
     seasons: { summer: 75, autumn: 85, winter: 90, spring: 88 },
     mating: "Year-round",
     active: "Dawn and dusk",
@@ -106,8 +117,8 @@ const ANIMALS = [
     danger: 1,
     dangerLabel: "generally safe",
     description: "Yes, over a million wild camels roam Australia. The British brought them.",
-    regions: { QLD: 40, NSW: 20, VIC: 5, SA: 75, WA: 80, NT: 90, TAS: 0, ACT: 0 },
-    urban: 5, rural: 70,
+    gbifKey: 2440965,  // Camelus dromedarius
+    gbifRadius: 150,
     seasons: { summer: 60, autumn: 70, winter: 75, spring: 70 },
     mating: "June – September",
     active: "Year-round",
@@ -126,8 +137,8 @@ const ANIMALS = [
     danger: 1,
     dangerLabel: "generally safe",
     description: "Sleeps 18–22 hours a day. Eats only eucalyptus leaves.",
-    regions: { QLD: 75, NSW: 80, VIC: 70, SA: 50, WA: 10, NT: 5, TAS: 0, ACT: 60 },
-    urban: 45, rural: 80,
+    gbifKey: 2440020,  // Phascolarctos cinereus
+    gbifRadius: 50,
     seasons: { summer: 60, autumn: 75, winter: 70, spring: 85 },
     mating: "October – February",
     active: "Nocturnal (rarely seen during the day)",
@@ -146,8 +157,8 @@ const ANIMALS = [
     danger: 1,
     dangerLabel: "generally safe",
     description: "Loud, intelligent, and everywhere. An Australian classic.",
-    regions: { QLD: 90, NSW: 92, VIC: 85, SA: 70, WA: 75, NT: 80, TAS: 65, ACT: 88 },
-    urban: 90, rural: 85,
+    gbifKey: 2479829,  // Cacatua galerita
+    gbifRadius: 30,
     seasons: { summer: 80, autumn: 85, winter: 75, spring: 90 },
     mating: "August – January",
     active: "Daytime",
@@ -166,8 +177,8 @@ const ANIMALS = [
     danger: 5,
     dangerLabel: "DEADLY",
     description: "The world's second most venomous snake. Responsible for most snakebite deaths in Australia.",
-    regions: { QLD: 90, NSW: 95, VIC: 80, SA: 75, WA: 40, NT: 60, TAS: 10, ACT: 85 },
-    urban: 55, rural: 92,
+    gbifKey: 2445099,  // Pseudonaja textilis
+    gbifRadius: 50,
     seasons: { summer: 95, autumn: 65, winter: 15, spring: 88 },
     mating: "September – October",
     active: "Spring–Summer, during the day",
@@ -186,8 +197,10 @@ const ANIMALS = [
     danger: 4,
     dangerLabel: "dangerous",
     description: "The apex predator of Australian waters.",
-    regions: { QLD: 60, NSW: 75, VIC: 65, SA: 80, WA: 85, NT: 30, TAS: 70, ACT: 0 },
-    urban: 40, rural: 60,
+    gbifKey: 2747360,  // Carcharodon carcharias
+    gbifRadius: 100,
+    marineOnly: true,
+    coastalOnly: true,
     seasons: { summer: 85, autumn: 70, winter: 55, spring: 75 },
     mating: "October – January",
     active: "Year-round, most active at dawn and dusk",
@@ -206,8 +219,8 @@ const ANIMALS = [
     danger: 1,
     dangerLabel: "generally safe",
     description: "Stocky, adorable, produces cube-shaped droppings. Seriously.",
-    regions: { QLD: 40, NSW: 75, VIC: 80, SA: 60, WA: 20, NT: 5, TAS: 85, ACT: 70 },
-    urban: 30, rural: 85,
+    gbifKey: 2440014,  // Vombatus ursinus
+    gbifRadius: 50,
     seasons: { summer: 60, autumn: 75, winter: 80, spring: 70 },
     mating: "Year-round",
     active: "Nocturnal",
@@ -226,8 +239,8 @@ const ANIMALS = [
     danger: 2,
     dangerLabel: "low risk",
     description: "Australia's wild dog. Famous line: 'A dingo ate my baby!'",
-    regions: { QLD: 85, NSW: 75, VIC: 50, SA: 80, WA: 85, NT: 95, TAS: 5, ACT: 40 },
-    urban: 20, rural: 88,
+    gbifKey: 5219627,  // Canis lupus dingo
+    gbifRadius: 100,
     seasons: { summer: 75, autumn: 80, winter: 70, spring: 85 },
     mating: "April – June",
     active: "Dawn and dusk",
@@ -246,8 +259,8 @@ const ANIMALS = [
     danger: 1,
     dangerLabel: "generally safe",
     description: "The kangaroo's smaller cousin. Cuter, less dangerous.",
-    regions: { QLD: 85, NSW: 88, VIC: 82, SA: 70, WA: 75, NT: 65, TAS: 90, ACT: 80 },
-    urban: 50, rural: 90,
+    gbifKey: 4263402,  // Notamacropus genus (wallabies)
+    gbifRadius: 50,
     seasons: { summer: 70, autumn: 80, winter: 85, spring: 88 },
     mating: "Year-round",
     active: "Dawn and dusk",
@@ -266,8 +279,8 @@ const ANIMALS = [
     danger: 2,
     dangerLabel: "low risk",
     description: "The world's largest carnivorous marsupial. Eats everything, including bones.",
-    regions: { QLD: 0, NSW: 0, VIC: 0, SA: 0, WA: 0, NT: 0, TAS: 95, ACT: 0 },
-    urban: 20, rural: 90,
+    gbifKey: 2440047,  // Sarcophilus harrisii
+    gbifRadius: 75,
     seasons: { summer: 65, autumn: 80, winter: 70, spring: 85 },
     mating: "February – June",
     active: "Nocturnal",
@@ -286,8 +299,8 @@ const ANIMALS = [
     danger: 2,
     dangerLabel: "low risk",
     description: "The world's second largest bird. Can't fly, but runs at 50 km/h.",
-    regions: { QLD: 85, NSW: 88, VIC: 75, SA: 82, WA: 90, NT: 85, TAS: 10, ACT: 65 },
-    urban: 25, rural: 92,
+    gbifKey: 2481766,  // Dromaius novaehollandiae
+    gbifRadius: 75,
     seasons: { summer: 65, autumn: 75, winter: 85, spring: 80 },
     mating: "April – June",
     active: "Daytime",
@@ -306,8 +319,8 @@ const ANIMALS = [
     danger: 2,
     dangerLabel: "seasonal risk",
     description: "Australia's most feared bird during nesting season. It will swoop.",
-    regions: { QLD: 90, NSW: 95, VIC: 92, SA: 85, WA: 80, NT: 60, TAS: 75, ACT: 95 },
-    urban: 95, rural: 85,
+    gbifKey: 2482592,  // Gymnorhina tibicen
+    gbifRadius: 20,
     seasons: { summer: 40, autumn: 30, winter: 20, spring: 98 },
     mating: "August – October (swoops during nesting!)",
     active: "Daytime",
@@ -326,8 +339,10 @@ const ANIMALS = [
     danger: 5,
     dangerLabel: "DEADLY",
     description: "The world's most venomous marine creature. Found in northern Australia in summer.",
-    regions: { QLD: 90, NSW: 20, VIC: 5, SA: 5, WA: 60, NT: 95, TAS: 0, ACT: 0 },
-    urban: 50, rural: 50,
+    gbifKey: 2908192,  // Chironex fleckeri
+    gbifRadius: 100,
+    marineOnly: true,
+    coastalOnly: true,
     seasons: { summer: 98, autumn: 50, winter: 5, spring: 60 },
     mating: "September – October",
     active: "Summer (October – April)",
