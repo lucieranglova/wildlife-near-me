@@ -385,7 +385,7 @@
   </div>
 
   <footer>
-    Sighting chance calculated from real occurrence records · Occurrence data: <a href="https://www.gbif.org" target="_blank" style="color:var(--text-muted)">GBIF</a> (Global Biodiversity Information Facility) · Geocoding: OpenStreetMap<br>
+    Sighting chance based on regional distribution data · Geocoding: OpenStreetMap · Coastal detection via Haversine<br>
     Built with ❤️ for cold water swimmers dreaming of Brisbane 🦘
   </footer>
 </div>
@@ -444,53 +444,25 @@
     return COAST_POINTS.some(([clat, clon]) => haversine(lat, lon, clat, clon) < 120);
   }
 
-  function seasonMod(animal) {
-    return (animal.seasons?.[currentSeason] ?? 70) / 100;
-  }
-
-  function normalise(count, animal) {
+  // --- Chance calculation (static data + coastal check) ---
+  function calcChance(animal) {
     if ((animal.coastalOnly || animal.marineOnly) && !currentCoastal) return 0;
-    const cap = animal.staticMaxPct || 99;
-    const sat = { magpie:200, cockatoo:200, kangaroo:400, wallaby:400,
-                  emu:150, koala:100, wombat:80, dingo:60, camel:60 }[animal.id]
-                ?? (animal.danger >= 4 ? 30 : 50);
-    return Math.min(Math.round(95 * (1 - Math.exp(-count / sat))), cap);
-  }
-
-  // --- GBIF fetch ---
-  async function fetchGBIFCount(animal) {
-    if ((animal.coastalOnly || animal.marineOnly) && !currentCoastal) return 0;
-    const r = animal.gbifRadius || 50;
-    const latMin = (currentLat - r * 0.009).toFixed(3);
-    const latMax = (currentLat + r * 0.009).toFixed(3);
-    const lonMin = (currentLon - r * 0.011).toFixed(3);
-    const lonMax = (currentLon + r * 0.011).toFixed(3);
-    const name = encodeURIComponent(animal.sciName);
-    const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${name}&decimalLatitude=${latMin},${latMax}&decimalLongitude=${lonMin},${lonMax}&country=AU&limit=0`;
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      return data.count || 0;
-    } catch { return 0; }
+    const regionScore = currentRegion === 'urban' ? animal.urban : animal.rural;
+    const stateScore  = animal.regions[currentState] || 0;
+    const seasonScore = animal.seasons?.[currentSeason] ?? 70;
+    return Math.round(Math.min(
+      stateScore * 0.40 + regionScore * 0.35 + seasonScore * 0.25,
+      99
+    ));
   }
 
   // --- Render ---
-  async function fetchAndRender() {
+  function renderAnimals() {
     const grid = document.getElementById('animals-grid');
-    grid.innerHTML = '<div class="loader" style="grid-column:1/-1"><span class="spinner"></span>Checking wildlife records nearby…</div>';
-
-    const counts = await Promise.all(ANIMALS.map(a => fetchGBIFCount(a)));
-
     const cards = ANIMALS
-      .map((a, i) => {
-        const base = normalise(counts[i], a);
-        const mod  = seasonMod(a);
-        const chance = Math.round(Math.min(base * 0.7 + base * mod * 0.3, 99));
-        return { ...a, chance, gbifCount: counts[i] };
-      })
+      .map(a => ({ ...a, chance: calcChance(a) }))
       .filter(a => !((a.coastalOnly || a.marineOnly) && !currentCoastal))
       .sort((a, b) => b.chance - a.chance);
-
     openCardId = null;
     grid.innerHTML = cards.map(buildCard).join('');
   }
@@ -499,7 +471,6 @@
     const c = a.chance;
     const fillClass = c >= 70 ? 'hi' : c <= 30 ? 'lo' : '';
     const peek = PEEK_MESSAGES[Math.floor(Math.random() * PEEK_MESSAGES.length)];
-    const gbifNote = `<span style="font-size:0.58rem;color:var(--text-muted);margin-left:auto">${a.gbifCount.toLocaleString()} records nearby</span>`;
     return `<div class="animal-card" id="card-${a.id}" onclick="toggleCard('${a.id}')">
       <div class="card-top">
         <span class="animal-emoji">${a.emoji}</span>
@@ -518,7 +489,6 @@
           <span>sighting chance</span><span class="chance-pct">${c}%</span>
         </div>
         <div class="bar-track"><div class="bar-fill ${fillClass}" style="width:${c}%"></div></div>
-        <div style="display:flex;margin-top:0.2rem">${gbifNote}</div>
       </div>
       <div class="infobox" id="info-${a.id}">
         <span class="danger-tag dtag-${a.danger}">${a.dangerLabel}</span>
@@ -562,7 +532,7 @@
   function setSeason(s) {
     currentSeason = s;
     document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.s === s));
-    if (currentLat !== null) fetchAndRender();
+    if (currentState !== null) renderAnimals();
   }
 
   // --- Geocoding ---
@@ -583,7 +553,7 @@
       </div>`;
     document.getElementById('controls').style.display = 'block';
     document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.s === currentSeason));
-    fetchAndRender();
+    renderAnimals();
   }
 
   function quickSearch(q) {
