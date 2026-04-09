@@ -386,7 +386,7 @@
 
   <footer>
     Sighting chance calculated from real occurrence records · Occurrence data: <a href="https://www.gbif.org" target="_blank" style="color:var(--text-muted)">GBIF</a> (Global Biodiversity Information Facility) · Geocoding: OpenStreetMap<br>
-    Built with ❤️
+    Built with ❤️ for cold water swimmers dreaming of Brisbane 🦘
   </footer>
 </div>
 
@@ -429,8 +429,14 @@
     grid.innerHTML = '<div class="loader" style="grid-column:1/-1"><span class="spinner"></span>Checking wildlife records nearby…</div>';
 
     // Fetch all animals in parallel from GBIF
+    // Skip fetch entirely for coastal/marine animals when location is inland
     const results = await Promise.allSettled(
-      ANIMALS.map(a => fetchGBIFCount(a, currentLat, currentLon))
+      ANIMALS.map(a => {
+        if ((a.coastalOnly || a.marineOnly) && !currentCoastal) {
+          return Promise.resolve(0); // don't even fetch, force 0
+        }
+        return fetchGBIFCount(a, currentLat, currentLon);
+      })
     );
 
     const withChance = ANIMALS.map((a, i) => {
@@ -456,21 +462,42 @@
     doSearch();
   }
 
-  // Rough coastal bounding boxes for Australian states [minLat, maxLat, minLon, maxLon, coastKm threshold]
-  // We approximate coastal access by checking if lat/lon is within ~80km of known coastal bbox edges
+  // Haversine distance in km between two lat/lon points
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  // Representative coastal points around Australia (not exhaustive, but good coverage)
+  const COAST_POINTS = [
+    [-33.87, 151.21], // Sydney
+    [-37.81, 144.96], // Melbourne
+    [-27.47, 153.02], // Brisbane
+    [-31.95, 115.86], // Perth
+    [-34.93, 138.60], // Adelaide
+    [-12.46, 130.84], // Darwin
+    [-16.92, 145.77], // Cairns
+    [-42.88, 147.33], // Hobart
+    [-20.73, 116.84], // Karratha WA
+    [-23.36, 150.51], // Rockhampton
+    [-19.26, 146.82], // Townsville
+    [-17.96, 122.24], // Broome
+    [-35.08, 117.88], // Albany WA
+    [-32.93, 151.78], // Newcastle NSW
+    [-29.39, 153.36], // Ballina NSW
+    [-38.15, 144.36], // Geelong VIC
+    [-43.11, 145.60], // Strahan TAS (west coast)
+    [-11.37, 136.70], // Gulf of Carpentaria east
+    [-15.47, 136.77], // Gulf of Carpentaria mid
+  ];
+
+  const COASTAL_THRESHOLD_KM = 120; // within 120km of coast = coastal
+
   function isCoastal(lat, lon) {
-    // Simple check: distance from nearest coast approximated by being near state bbox edge
-    // Australia mainland coast bbox roughly: lat -10 to -44, lon 113 to 154
-    // We consider "coastal" if within ~1.5 degrees (~150km) of sea edges
-    const distFromSeaEdge = Math.min(
-      Math.abs(lat - (-10.5)),  // far north coast
-      Math.abs(lat - (-43.6)),  // south coast
-      Math.abs(lon - 113.1),    // west coast
-      Math.abs(lon - 153.7)     // east coast
-    );
-    // Also check Gulf of Carpentaria and other major inlets via known ranges
-    const inGulf = lat > -18 && lat < -11 && lon > 136 && lon < 140;
-    return distFromSeaEdge < 1.2 || inGulf;
+    return COAST_POINTS.some(([clat, clon]) => haversine(lat, lon, clat, clon) < COASTAL_THRESHOLD_KM);
   }
 
   // Fetch occurrence count from GBIF for one animal at given coords
@@ -503,12 +530,8 @@
   // Season modifier applied on top of GBIF count
   function seasonMod(animal) {
     const s = animal.seasons?.[currentSeason] ?? 70;
-    return s / 100; // 0.0 – 1.0
+    return s / 100;
   }
-
-  let currentLat = null;
-  let currentLon = null;
-  let currentCoastal = false;
 
   function applyResult(state, label, regionType, lat, lon) {
     currentState = state;
@@ -527,7 +550,8 @@
       </div>`;
 
     document.getElementById('controls').style.display = 'block';
-    setSeason(currentSeason);
+    // Update season buttons without triggering fetchAndRender
+    document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.s === currentSeason));
     fetchAndRender();
   }
 
