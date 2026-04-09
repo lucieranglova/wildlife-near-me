@@ -386,7 +386,7 @@
 
   <footer>
     Sighting chance based on regional distribution data · Geocoding: OpenStreetMap · Coastal detection via Haversine<br>
-    Built with ❤️ 
+    Built with ❤️
   </footer>
 </div>
 
@@ -397,6 +397,12 @@
     'South Australia': 'SA', 'Western Australia': 'WA',
     'Northern Territory': 'NT', 'Tasmania': 'TAS',
     'Australian Capital Territory': 'ACT'
+  };
+
+  // Fallback: abbreviations or alternate spellings Photon sometimes returns
+  const STATE_MAP_ABBR = {
+    'QLD': 'QLD', 'NSW': 'NSW', 'VIC': 'VIC', 'SA': 'SA',
+    'WA': 'WA', 'NT': 'NT', 'TAS': 'TAS', 'ACT': 'ACT'
   };
 
   const COAST_POINTS = [
@@ -576,7 +582,9 @@
       const f = data.features?.find(f => f.properties?.country === 'Australia');
       if (f) {
         const p = f.properties;
-        const state = STATE_MAP[p.state || ''];
+        // Photon can return state as full name, abbreviation, or in 'county' field
+        const stateRaw = p.state || p.county || '';
+        const state = STATE_MAP[stateRaw] || STATE_MAP_ABBR[stateRaw.toUpperCase()] || null;
         if (!state) { grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Couldn\'t detect an Australian state.<br>Try adding the state, e.g. "Darwin, NT"</p></div>'; return; }
         const [lon, lat] = f.geometry.coordinates;
         const type = p.type || p.osm_value || '';
@@ -591,7 +599,8 @@
       const data = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(raw + ' Australia')}&format=json&addressdetails=1&limit=1&countrycodes=au`).then(r => r.json());
       if (data.length) {
         const place = data[0], addr = place.address;
-        const state = STATE_MAP[addr.state || ''];
+        const stateRaw = addr.state || addr.county || '';
+        const state = STATE_MAP[stateRaw] || STATE_MAP_ABBR[stateRaw.toUpperCase()] || null;
         if (!state) { grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Couldn\'t detect an Australian state.<br>Try adding the state, e.g. "Darwin, NT"</p></div>'; return; }
         const type = place.type || '';
         const region = ['city','town','suburb','quarter','neighbourhood','village'].includes(type) ? 'urban' : 'rural';
