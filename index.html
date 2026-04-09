@@ -386,13 +386,12 @@
 
   <footer>
     Sighting chance calculated from real occurrence records · Occurrence data: <a href="https://www.gbif.org" target="_blank" style="color:var(--text-muted)">GBIF</a> (Global Biodiversity Information Facility) · Geocoding: OpenStreetMap<br>
-    Built with ❤️ 
+    Built with ❤️ for cold water swimmers dreaming of Brisbane 🦘
   </footer>
 </div>
 
 <script src="animals.js"></script>
 <script>
-  // State mapping from Nominatim display names
   const STATE_MAP = {
     'Queensland': 'QLD', 'New South Wales': 'NSW', 'Victoria': 'VIC',
     'South Australia': 'SA', 'Western Australia': 'WA',
@@ -400,16 +399,32 @@
     'Australian Capital Territory': 'ACT'
   };
 
+  const COAST_POINTS = [
+    [-33.87,151.21],[-37.81,144.96],[-27.47,153.02],[-31.95,115.86],
+    [-34.93,138.60],[-12.46,130.84],[-16.92,145.77],[-42.88,147.33],
+    [-20.73,116.84],[-23.36,150.51],[-19.26,146.82],[-17.96,122.24],
+    [-35.08,117.88],[-32.93,151.78],[-29.39,153.36],[-38.15,144.36],
+    [-43.11,145.60],[-11.37,136.70],[-15.47,136.77],
+  ];
 
+  const PEEK_MESSAGES = [
+    ['👀','something moved over here…'],
+    ['🫣',"don't mind me"],
+    ['🐾','suspicious rustling noises'],
+    ['🌿','definitely not a snake'],
+    ['😶',"I'm just standing here"],
+  ];
 
-  let currentState = null;
-  let currentSeason = getCurrentAuSeason();
-  let currentRegion = 'urban';
-  let currentLat = null;
-  let currentLon = null;
+  // --- State ---
+  let currentState   = null;
+  let currentSeason  = null;
+  let currentRegion  = 'urban';
+  let currentLat     = null;
+  let currentLon     = null;
   let currentCoastal = false;
-  let openCardId = null;
+  let openCardId     = null;
 
+  // --- Helpers ---
   function getCurrentAuSeason() {
     const m = new Date().getMonth();
     if (m >= 11 || m <= 1) return 'summer';
@@ -418,226 +433,72 @@
     return 'spring';
   }
 
-  function setSeason(s) {
-    currentSeason = s;
-    document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.s === s));
-    if (currentLat !== null) fetchAndRender();
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371, toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
+  function isCoastal(lat, lon) {
+    return COAST_POINTS.some(([clat, clon]) => haversine(lat, lon, clat, clon) < 120);
+  }
+
+  function seasonMod(animal) {
+    return (animal.seasons?.[currentSeason] ?? 70) / 100;
+  }
+
+  function normalise(count, animal) {
+    if ((animal.coastalOnly || animal.marineOnly) && !currentCoastal) return 0;
+    const cap = animal.staticMaxPct || 99;
+    const sat = { magpie:200, cockatoo:200, kangaroo:400, wallaby:400,
+                  emu:150, koala:100, wombat:80, dingo:60, camel:60 }[animal.id]
+                ?? (animal.danger >= 4 ? 30 : 50);
+    return Math.min(Math.round(95 * (1 - Math.exp(-count / sat))), cap);
+  }
+
+  // --- GBIF fetch ---
+  async function fetchGBIFCount(animal) {
+    if ((animal.coastalOnly || animal.marineOnly) && !currentCoastal) return 0;
+    const r = animal.gbifRadius || 50;
+    const latMin = (currentLat - r * 0.009).toFixed(3);
+    const latMax = (currentLat + r * 0.009).toFixed(3);
+    const lonMin = (currentLon - r * 0.011).toFixed(3);
+    const lonMax = (currentLon + r * 0.011).toFixed(3);
+    const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${animal.gbifKey}&decimalLatitude=${latMin},${latMax}&decimalLongitude=${lonMin},${lonMax}&country=AU&limit=0`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      return data.count || 0;
+    } catch { return 0; }
+  }
+
+  // --- Render ---
   async function fetchAndRender() {
     const grid = document.getElementById('animals-grid');
     grid.innerHTML = '<div class="loader" style="grid-column:1/-1"><span class="spinner"></span>Checking wildlife records nearby…</div>';
 
-    // Fetch all animals in parallel from GBIF
-    // Skip fetch entirely for coastal/marine animals when location is inland
-    const results = await Promise.allSettled(
-      ANIMALS.map(a => {
-        if ((a.coastalOnly || a.marineOnly) && !currentCoastal) {
-          return Promise.resolve(0); // don't even fetch, force 0
-        }
-        return fetchGBIFCount(a, currentLat, currentLon);
+    const counts = await Promise.all(ANIMALS.map(a => fetchGBIFCount(a)));
+
+    const cards = ANIMALS
+      .map((a, i) => {
+        const base = normalise(counts[i], a);
+        const mod  = seasonMod(a);
+        const chance = Math.round(Math.min(base * 0.7 + base * mod * 0.3, 99));
+        return { ...a, chance, gbifCount: counts[i] };
       })
-    );
-
-    const withChance = ANIMALS.map((a, i) => {
-      const count = results[i].status === 'fulfilled' ? results[i].value : 0;
-      const base = normalise(count, a, currentCoastal);
-      const mod = seasonMod(a);
-      // Blend: 70% GBIF-derived, 30% season modifier
-      const chance = Math.round(Math.min(base * 0.7 + base * mod * 0.3, 99));
-      return { ...a, chance, gbifCount: count };
-    });
-
-    // Sort by chance desc, hide 0% coastal animals
-    const visible = withChance
-      .filter(a => !(a.coastalOnly && !currentCoastal) && !(a.marineOnly && !currentCoastal))
+      .filter(a => !((a.coastalOnly || a.marineOnly) && !currentCoastal))
       .sort((a, b) => b.chance - a.chance);
 
     openCardId = null;
-    grid.innerHTML = visible.map(a => buildCard(a)).join('');
+    grid.innerHTML = cards.map(buildCard).join('');
   }
-
-  function quickSearch(q) {
-    document.getElementById('addr-input').value = q;
-    doSearch();
-  }
-
-  // Haversine distance in km between two lat/lon points
-  function haversine(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  }
-
-  // Representative coastal points around Australia (not exhaustive, but good coverage)
-  const COAST_POINTS = [
-    [-33.87, 151.21], // Sydney
-    [-37.81, 144.96], // Melbourne
-    [-27.47, 153.02], // Brisbane
-    [-31.95, 115.86], // Perth
-    [-34.93, 138.60], // Adelaide
-    [-12.46, 130.84], // Darwin
-    [-16.92, 145.77], // Cairns
-    [-42.88, 147.33], // Hobart
-    [-20.73, 116.84], // Karratha WA
-    [-23.36, 150.51], // Rockhampton
-    [-19.26, 146.82], // Townsville
-    [-17.96, 122.24], // Broome
-    [-35.08, 117.88], // Albany WA
-    [-32.93, 151.78], // Newcastle NSW
-    [-29.39, 153.36], // Ballina NSW
-    [-38.15, 144.36], // Geelong VIC
-    [-43.11, 145.60], // Strahan TAS (west coast)
-    [-11.37, 136.70], // Gulf of Carpentaria east
-    [-15.47, 136.77], // Gulf of Carpentaria mid
-  ];
-
-  const COASTAL_THRESHOLD_KM = 120; // within 120km of coast = coastal
-
-  function isCoastal(lat, lon) {
-    return COAST_POINTS.some(([clat, clon]) => haversine(lat, lon, clat, clon) < COASTAL_THRESHOLD_KM);
-  }
-
-  // Fetch occurrence count from GBIF for one animal at given coords
-  async function fetchGBIFCount(animal, lat, lon) {
-    const radius = animal.gbifRadius || 50;
-    const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${animal.gbifKey}&decimalLatitude=${(lat-radius*0.009).toFixed(3)},${(lat+radius*0.009).toFixed(3)}&decimalLongitude=${(lon-radius*0.011).toFixed(3)},${(lon+radius*0.011).toFixed(3)}&country=AU&limit=0`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data.count || 0;
-  }
-
-  // Normalise raw GBIF count to 0-99% sighting chance
-  // Thresholds tuned per animal type: common species saturate at ~500 records, rare at ~20
-  function normalise(count, animal, coastal) {
-    if ((animal.coastalOnly || animal.marineOnly) && !coastal) return 0;
-    const cap = animal.staticMaxPct || 99;
-    // Saturation point: records needed to reach ~95%
-    const saturation = animal.id === 'magpie' || animal.id === 'cockatoo' ? 200
-      : animal.id === 'kangaroo' || animal.id === 'wallaby' ? 400
-      : animal.id === 'emu' ? 150
-      : animal.id === 'koala' ? 100
-      : animal.id === 'wombat' ? 80
-      : animal.id === 'dingo' || animal.id === 'camel' ? 60
-      : animal.danger >= 4 ? 30
-      : 50;
-    const raw = Math.round(95 * (1 - Math.exp(-count / saturation)));
-    return Math.min(raw, cap);
-  }
-
-  // Season modifier applied on top of GBIF count
-  function seasonMod(animal) {
-    const s = animal.seasons?.[currentSeason] ?? 70;
-    return s / 100; // 0.0 – 1.0
-  }
-
-  let currentLat = null;
-  let currentLon = null;
-  let currentCoastal = false;
-
-  function applyResult(state, label, regionType, lat, lon) {
-    currentState = state;
-    currentRegion = regionType;
-    currentLat = lat;
-    currentLon = lon;
-    currentCoastal = isCoastal(lat, lon);
-
-    document.getElementById('status').innerHTML = `
-      <div class="location-found">
-        <span class="badge badge-green">📍 Found</span>
-        <span>${label}</span>
-        <span class="badge badge-ochre">${state}</span>
-        <span class="badge badge-sky">${regionType === 'urban' ? '🏙️ urban' : '🌿 rural'}</span>
-        ${currentCoastal ? '<span class="badge" style="background:#1A6B9A">🌊 coastal</span>' : ''}
-      </div>`;
-
-    document.getElementById('controls').style.display = 'block';
-    setSeason(currentSeason);
-    fetchAndRender();
-  }
-
-  async function doSearch() {
-    const raw = document.getElementById('addr-input').value.trim();
-    if (!raw) return;
-
-    const grid = document.getElementById('animals-grid');
-    const status = document.getElementById('status');
-    grid.innerHTML = '<div class="loader"><span class="spinner"></span>Finding your location…</div>';
-    status.innerHTML = '';
-    document.getElementById('controls').style.display = 'none';
-
-    // Photon (Komoot) – no CORS issues, no API key
-    try {
-      const q = encodeURIComponent(raw);
-      const url = `https://photon.komoot.io/api/?q=${q}&limit=5&lang=en`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const auFeature = data.features?.find(f => f.properties?.country === 'Australia');
-
-      if (auFeature) {
-        const props = auFeature.properties;
-        const stateFull = props.state || '';
-        const state = STATE_MAP[stateFull] || null;
-
-        if (!state) {
-          grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Couldn\'t detect an Australian state.<br>Try adding the state, e.g. "Darwin, NT"</p></div>';
-          return;
-        }
-
-        const [lon, lat] = auFeature.geometry.coordinates;
-        const placeType = props.type || props.osm_value || '';
-        const regionType = ['city','town','suburb','quarter','neighbourhood','village','borough'].includes(placeType) ? 'urban' : 'rural';
-        const label = props.name || props.city || props.town || props.village || raw;
-        applyResult(state, label, regionType, lat, lon);
-        return;
-      }
-    } catch (e) { console.warn('Photon failed:', e); }
-
-    // Fallback: Nominatim
-    try {
-      const q = encodeURIComponent(raw + ' Australia');
-      const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&addressdetails=1&limit=1&countrycodes=au`;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (data.length) {
-        const place = data[0];
-        const addr = place.address;
-        const state = STATE_MAP[addr.state || ''] || null;
-        if (!state) {
-          grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Couldn\'t detect an Australian state.<br>Try adding the state, e.g. "Darwin, NT"</p></div>';
-          return;
-        }
-        const lat = parseFloat(place.lat);
-        const lon = parseFloat(place.lon);
-        const placeType = place.type || '';
-        const regionType = ['city','town','suburb','quarter','neighbourhood','village'].includes(placeType) ? 'urban' : 'rural';
-        const label = addr.suburb || addr.city || addr.town || addr.village || place.name || raw;
-        applyResult(state, label, regionType, lat, lon);
-        return;
-      }
-    } catch (e) { console.warn('Nominatim failed:', e); }
-
-    grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Location not found.<br>Try a different address or add the state, e.g. "Darwin, NT"</p></div>';
-  }
-
-  const PEEK_MESSAGES = [
-    ['👀', 'something moved over here…'],
-    ['🫣', 'don\'t mind me'],
-    ['🐾', 'suspicious rustling noises'],
-    ['🌿', 'definitely not a snake'],
-    ['😶', 'I\'m just standing here'],
-  ];
 
   function buildCard(a) {
     const c = a.chance;
     const fillClass = c >= 70 ? 'hi' : c <= 30 ? 'lo' : '';
     const peek = PEEK_MESSAGES[Math.floor(Math.random() * PEEK_MESSAGES.length)];
-    const gbifNote = a.gbifCount !== undefined
-      ? `<span style="font-size:0.58rem;color:var(--text-muted);margin-left:auto">${a.gbifCount.toLocaleString()} records nearby</span>`
-      : '';
+    const gbifNote = `<span style="font-size:0.58rem;color:var(--text-muted);margin-left:auto">${a.gbifCount.toLocaleString()} records nearby</span>`;
     return `<div class="animal-card" id="card-${a.id}" onclick="toggleCard('${a.id}')">
       <div class="card-top">
         <span class="animal-emoji">${a.emoji}</span>
@@ -676,35 +537,105 @@
     const info = document.getElementById('info-' + id);
     const card = document.getElementById('card-' + id);
     const isOpen = info.classList.contains('open');
-
-    // close previously open card and clear all peeking
     if (openCardId) {
       document.getElementById('info-' + openCardId)?.classList.remove('open');
       document.getElementById('card-' + openCardId)?.classList.remove('open');
     }
     document.querySelectorAll('.animal-card.peeking').forEach(c => c.classList.remove('peeking'));
-
     if (!isOpen) {
       info.classList.add('open');
       card.classList.add('open');
       openCardId = id;
-
-      // find same-row neighbours using grid layout
       const grid = document.getElementById('animals-grid');
-      const cards = [...grid.querySelectorAll('.animal-card')];
       const openTop = card.getBoundingClientRect().top;
-      cards.forEach(c => {
-        if (c === card) return;
-        const top = c.getBoundingClientRect().top;
-        if (Math.abs(top - openTop) < 10) c.classList.add('peeking');
+      [...grid.querySelectorAll('.animal-card')].forEach(c => {
+        if (c !== card && Math.abs(c.getBoundingClientRect().top - openTop) < 10)
+          c.classList.add('peeking');
       });
     } else {
       openCardId = null;
     }
   }
 
+  // --- Season ---
+  function setSeason(s) {
+    currentSeason = s;
+    document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.s === s));
+    if (currentLat !== null) fetchAndRender();
+  }
+
+  // --- Geocoding ---
+  function applyResult(state, label, regionType, lat, lon) {
+    currentState   = state;
+    currentRegion  = regionType;
+    currentLat     = lat;
+    currentLon     = lon;
+    currentCoastal = isCoastal(lat, lon);
+
+    document.getElementById('status').innerHTML = `
+      <div class="location-found">
+        <span class="badge badge-green">📍 Found</span>
+        <span>${label}</span>
+        <span class="badge badge-ochre">${state}</span>
+        <span class="badge badge-sky">${regionType === 'urban' ? '🏙️ urban' : '🌿 rural'}</span>
+        ${currentCoastal ? '<span class="badge" style="background:#1A6B9A">🌊 coastal</span>' : ''}
+      </div>`;
+    document.getElementById('controls').style.display = 'block';
+    document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.s === currentSeason));
+    fetchAndRender();
+  }
+
+  function quickSearch(q) {
+    document.getElementById('addr-input').value = q;
+    doSearch();
+  }
+
+  async function doSearch() {
+    const raw = document.getElementById('addr-input').value.trim();
+    if (!raw) return;
+
+    const grid = document.getElementById('animals-grid');
+    grid.innerHTML = '<div class="loader"><span class="spinner"></span>Finding your location…</div>';
+    document.getElementById('status').innerHTML = '';
+    document.getElementById('controls').style.display = 'none';
+
+    // Photon
+    try {
+      const data = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(raw)}&limit=5&lang=en`).then(r => r.json());
+      const f = data.features?.find(f => f.properties?.country === 'Australia');
+      if (f) {
+        const p = f.properties;
+        const state = STATE_MAP[p.state || ''];
+        if (!state) { grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Couldn\'t detect an Australian state.<br>Try adding the state, e.g. "Darwin, NT"</p></div>'; return; }
+        const [lon, lat] = f.geometry.coordinates;
+        const type = p.type || p.osm_value || '';
+        const region = ['city','town','suburb','quarter','neighbourhood','village','borough'].includes(type) ? 'urban' : 'rural';
+        applyResult(state, p.name || p.city || p.town || p.village || raw, region, lat, lon);
+        return;
+      }
+    } catch(e) { console.warn('Photon:', e); }
+
+    // Nominatim fallback
+    try {
+      const data = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(raw + ' Australia')}&format=json&addressdetails=1&limit=1&countrycodes=au`).then(r => r.json());
+      if (data.length) {
+        const place = data[0], addr = place.address;
+        const state = STATE_MAP[addr.state || ''];
+        if (!state) { grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Couldn\'t detect an Australian state.<br>Try adding the state, e.g. "Darwin, NT"</p></div>'; return; }
+        const type = place.type || '';
+        const region = ['city','town','suburb','quarter','neighbourhood','village'].includes(type) ? 'urban' : 'rural';
+        applyResult(state, addr.suburb || addr.city || addr.town || addr.village || place.name || raw, region, parseFloat(place.lat), parseFloat(place.lon));
+        return;
+      }
+    } catch(e) { console.warn('Nominatim:', e); }
+
+    grid.innerHTML = '<div class="empty-state"><div class="big">🤔</div><p>Location not found.<br>Try a different address or add the state, e.g. "Darwin, NT"</p></div>';
+  }
+
+  // --- Init ---
+  currentSeason = getCurrentAuSeason();
+  document.querySelectorAll('.season-btn').forEach(b => b.classList.toggle('active', b.dataset.s === currentSeason));
   document.getElementById('addr-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
-  setSeason(currentSeason);
 </script>
 </body>
 </html>
