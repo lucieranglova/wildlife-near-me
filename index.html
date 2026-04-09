@@ -465,7 +465,8 @@
     const latMax = (currentLat + r * 0.009).toFixed(3);
     const lonMin = (currentLon - r * 0.011).toFixed(3);
     const lonMax = (currentLon + r * 0.011).toFixed(3);
-    const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${animal.gbifKey}&decimalLatitude=${latMin},${latMax}&decimalLongitude=${lonMin},${lonMax}&country=AU&limit=0`;
+    const name = encodeURIComponent(animal.sciName);
+    const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${name}&decimalLatitude=${latMin},${latMax}&decimalLongitude=${lonMin},${lonMax}&country=AU&limit=0`;
     try {
       const res = await fetch(url);
       const data = await res.json();
